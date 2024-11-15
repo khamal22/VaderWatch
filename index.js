@@ -212,4 +212,3 @@ const style = $('<style>')
     }
   `);
 $('head').append(style);
-
