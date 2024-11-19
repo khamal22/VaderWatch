@@ -4,6 +4,13 @@ $(document).ready(() => {
 
   // Styling for a dark, edgy theme
   $body.css({
+    'background-image': 'url("https://25.media.tumblr.com/0c48fb5d058b311240eb593e77fe454a/tumblr_mrrc9qSBEv1s3a8qvo1_500.gif")',
+    'background-size': 'cover',
+    'background-repeat': 'no-repeat',
+    'background-attachment': 'fixed',
+    'background-position': 'center',
+    'color': '#e0e0e0',
+    'font-family': 'Roboto, sans-serif',
     'background-color': '#121212',
     'color': '#e0e0e0',
     'font-family': 'Roboto, sans-serif'
@@ -23,10 +30,8 @@ $(document).ready(() => {
   $div.appendTo($body);
 
   // Input and button styling
-  const $input = $('<button>')
+  const $refreshButton = $('<button>')
     .attr('class', 'marked')
-    .width('70px')
-    .height('30px')
     .text('Refresh')
     .css({
       'background-color': '#333',
@@ -36,26 +41,24 @@ $(document).ready(() => {
       'padding': '5px 15px',
       'cursor': 'pointer'
     });
-  $input.appendTo($body);
+  $refreshButton.appendTo($body);
 
   const $inputTextBox = $('<textarea>')
     .attr('class', 'textBox')
     .attr('placeholder', 'Send a Message')
-    .width('200px')
-    .height('30px')
     .css({
       'background-color': '#1e1e1e',
       'color': '#e0e0e0',
       'border': '1px solid #444',
       'padding': '10px',
-      'border-radius': '5px'
+      'border-radius': '5px',
+      'width': '250px',
+      'margin-right': '10px'
     });
   $inputTextBox.appendTo($body);
 
-  const $inputSendButton = $('<button>')
+  const $sendButton = $('<button>')
     .attr('class', 'sendButton')
-    .width('70px')
-    .height('30px')
     .text('Send')
     .css({
       'background-color': '#333',
@@ -65,124 +68,77 @@ $(document).ready(() => {
       'padding': '5px 15px',
       'cursor': 'pointer'
     });
-  $inputSendButton.appendTo($body);
+  $sendButton.appendTo($body);
 
-  // Tweet box container styling
+  // Tweet box container
   const $tweetbox = $('<div>').attr('id', 'tweetbox').css({
     'padding': '20px',
     'margin-top': '20px',
   }).appendTo($body);
 
-  // Function to create tweets with emoji reactions and timestamps
+  // Track displayed tweets
+  let displayedTweets = new Set();
+
+  // Function to create tweets
   function tweetmaker(tweets) {
-    const $tweets = tweets.map((tweet) => {
-      const $tweet = $('<div></div>');
-      const text1 = `@${tweet.user}: `;
-      const text2 = `${tweet.message} ${dayjs(tweet.created_at).format('MMMM D, YYYY h:mm A')} (${dayjs(tweet.created_at).fromNow()})`;
+    tweets.filter(tweet => !displayedTweets.has(tweet.created_at)).forEach(tweet => {
+      displayedTweets.add(tweet.created_at); // Mark tweet as displayed
+      const $tweet = $('<div>');
 
-      // Username and message styling within each tweet
-      $('<p>').attr('class', 'clickableName')
+      // Add username and message
+      const $username = $('<p>')
+        .attr('class', 'clickableName')
         .css('color', '#e74c3c')
-        .text(text1)
-        .appendTo($tweet);
-      $('<p>').text(text2).css({
-        'color': '#b3b3b3'
-      }).appendTo($tweet);
+        .text(`@${tweet.user}`)
+        .on('click', () => {
+          const filteredTweets = streams.home.filter(t => t.user === tweet.user);
+          showFilteredTweets(filteredTweets, `@${tweet.user}`);
+        });
 
-      // Emoji reactions container
-      const $emojiContainer = $('<div>').attr('class', 'emoji-container').css({
+      const $message = $('<p>')
+        .text(tweet.message)
+        .css('color', '#b3b3b3');
+
+      const $timestamp = $('<p>')
+        .text(`${dayjs(tweet.created_at).format('MMMM D, YYYY h:mm A')} (${dayjs(tweet.created_at).fromNow()})`)
+        .css('color', '#888');
+
+      // Add emoji reactions
+      const $emojiContainer = $('<div>').css({
         'display': 'flex',
         'gap': '10px',
         'margin-top': '10px',
         'font-size': '1.2em',
       });
 
-      // Add emojis with click functionality for red border
-      const emojis = ['👍', '😂', '❤️', '🔥', '😮'];
-      emojis.forEach((emoji) => {
+      ['👍', '😂', '❤️', '🔥', '😮'].forEach(emoji => {
         const $emoji = $('<span>')
           .text(emoji)
-          .css({
-            'cursor': 'pointer',
-            'padding': '5px',
-            'border-radius': '5px',
-            'transition': 'transform 0.2s',
-            'color': '#e0e0e0'
-          })
-          .on('click', function() {
-            // Toggle red box around clicked emoji
+          .css({ 'cursor': 'pointer', 'padding': '5px' })
+          .on('click', function () {
             $(this).toggleClass('emoji-selected');
           });
         $emojiContainer.append($emoji);
       });
 
-      $emojiContainer.appendTo($tweet);
+      $tweet.append($username, $message, $timestamp, $emojiContainer).css({
+        'background-color': '#1e1e1e',
+        'border': '1px solid #444',
+        'color': '#e0e0e0',
+        'padding': '10px',
+        'border-radius': '5px',
+        'margin-bottom': '10px',
+        'box-shadow': '0 0 15px rgba(255, 0, 0, 0.5)',
+      });
 
-      // Tweet container styling with red glow
-      $tweet.attr('id', tweet.user)
-        .attr('class', 'aTweet')
-        .css({
-          'background-color': '#1e1e1e',
-          'border': '1px solid #444',
-          'color': '#e0e0e0',
-          'padding': '10px',
-          'border-radius': '5px',
-          'margin-bottom': '10px',
-          'box-shadow': '0 0 15px rgba(255, 0, 0, 0.5)', // Red glow
-        });
-
-      return $tweet;
+      $tweetbox.prepend($tweet); // Add new tweets to the top
     });
-
-    // Clear existing tweets and append new ones at the top
-    $tweetbox.prepend($tweets);
   }
 
-  // Initial call to load tweets
-  tweetmaker(streams.home);
-
-  // Button hover effects for interactivity
-  $('button').hover(
-    function() {
-      $(this).css({
-        'background-color': '#e74c3c',
-        'color': '#121212',
-        'box-shadow': '0 0 10px rgba(255, 0, 0, 0.8)'
-      });
-    },
-    function() {
-      $(this).css({
-        'background-color': '#333',
-        'color': '#e74c3c',
-        'box-shadow': 'none'
-      });
-    }
-  );
-
-  // Refresh button functionality (loads tweets)
-  $('.marked').on('click', () => {
-    tweetmaker(streams.home);
-  });
-
-  // Send button functionality (adds new tweet to the top)
-  $('.sendButton').on('click', () => {
-    const newMessage = {
-      user: 'You',
-      message: $inputTextBox.val(),
-      created_at: new Date()
-    };
-    streams.home.unshift(newMessage); // Add new tweet at the top
-    tweetmaker(streams.home);
-    $inputTextBox.val(''); // Clear the input after sending
-  });
-
-  // Filter by user on click (shows that user's timeline)
-  $tweetbox.on('click', '.clickableName', function() {
-    const username = $(this).closest('.aTweet').attr('id');
-    const filteredTweets = streams.home.filter((tweet) => tweet.user === username);
-    tweetmaker(filteredTweets);
-
-    // Add a "Back to Home" button
+  // Function to show filtered tweets and add a back button
+  function showFilteredTweets(tweets, title) {
+    $tweetbox.empty(); // Clear all tweets
+    const $title = $('<h3>').text(`${title}'s Timeline`).css('color', '#e74c3c');
     const $backButton = $('<button>')
       .text('Back to Home')
       .css({
@@ -195,20 +151,44 @@ $(document).ready(() => {
         'margin-top': '10px'
       })
       .on('click', () => {
-        tweetmaker(streams.home); // Display home timeline again
-        $backButton.remove(); // Remove the back button
+        $tweetbox.empty();
+        tweetmaker(streams.home); // Reload home timeline
       });
-    $tweetbox.prepend($backButton);
-  });
-});
 
-// CSS for selected emoji box
-const style = $('<style>')
-  .text(`
+    $tweetbox.append($title, $backButton);
+    tweetmaker(tweets);
+  }
+
+  // Load initial tweets
+  tweetmaker(streams.home);
+
+  // Refresh button functionality
+  $refreshButton.on('click', () => {
+    tweetmaker(streams.home);
+  });
+
+  // Send button functionality
+  $sendButton.on('click', () => {
+    const newTweet = {
+      user: 'You',
+      message: $inputTextBox.val(),
+      created_at: new Date()
+    };
+
+    streams.home.unshift(newTweet); // Add to data stream
+    tweetmaker([newTweet]); // Show new tweet on top
+    $inputTextBox.val(''); // Clear the input box
+  });
+
+  // Add custom CSS for selected emoji
+  const style = $('<style>').text(`
     .emoji-selected {
       border: 2px solid #e74c3c;
       border-radius: 5px;
       padding: 5px;
     }
   `);
-$('head').append(style);
+  $('head').append(style);
+});
+
+
