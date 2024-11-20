@@ -3,7 +3,6 @@ $(document).ready(() => {
   $body.html("");
 
   // Styling for a dark, edgy theme
-
   $body.css({
     "background-image":
       'url("https://25.media.tumblr.com/0c48fb5d058b311240eb593e77fe454a/tumblr_mrrc9qSBEv1s3a8qvo1_500.gif")',
@@ -14,8 +13,6 @@ $(document).ready(() => {
     color: "#e0e0e0",
     "font-family": "Roboto, sans-serif",
     "background-color": "#121212",
-    color: "#e0e0e0",
-    "font-family": "Roboto, sans-serif",
   });
 
   // Header image container
@@ -88,11 +85,17 @@ $(document).ready(() => {
 
   // Track displayed tweets
   let displayedTweets = new Set();
+  let filteredUser = null; // Track the currently filtered user
 
   // Function to create tweets
   function tweetmaker(tweets) {
     tweets
-      .filter((tweet) => !displayedTweets.has(tweet.created_at))
+      .filter((tweet) => {
+        if (filteredUser) {
+          return `@${tweet.user}` === filteredUser; // Show only filtered user's tweets
+        }
+        return !displayedTweets.has(tweet.created_at);
+      })
       .forEach((tweet) => {
         displayedTweets.add(tweet.created_at); // Mark tweet as displayed
         const $tweet = $("<div>");
@@ -153,28 +156,36 @@ $(document).ready(() => {
 
   // Function to show filtered tweets and add a back button
   function showFilteredTweets(tweets, title) {
-    $tweetbox.empty(); // Clear all tweets
-    const $title = $("<h3>")
-      .text(`${title}'s Timeline`)
-      .css("color", "#e74c3c");
-    const $backButton = $("<button>")
-      .text("Back to Home")
-      .css({
-        "background-color": "#333",
-        color: "#e74c3c",
-        border: "1px solid #e74c3c",
-        "border-radius": "5px",
-        padding: "5px 15px",
-        cursor: "pointer",
-        "margin-top": "10px",
-      })
-      .on("click", () => {
-        $tweetbox.empty();
-        tweetmaker(streams.home); // Reload home timeline
-      });
+    filteredUser = title; // Store the filtered user
+    $tweetbox.fadeOut(300, () => {
+      $tweetbox.empty(); // Clear all tweets
+      const $title = $("<h3>")
+        .text(`${title}'s Timeline`)
+        .css({ color: "#e74c3c", "text-align": "center" });
+      const $backButton = $("<button>")
+        .text("Back to Home")
+        .css({
+          "background-color": "#333",
+          color: "#e74c3c",
+          border: "1px solid #e74c3c",
+          "border-radius": "5px",
+          padding: "5px 15px",
+          cursor: "pointer",
+          "margin-top": "10px",
+        })
+        .on("click", () => {
+          filteredUser = null; // Clear the filtered user
+          $tweetbox.fadeOut(300, () => {
+            $tweetbox.empty();
+            tweetmaker(streams.home); // Reload home timeline
+            $tweetbox.fadeIn(300);
+          });
+        });
 
-    $tweetbox.append($title, $backButton);
-    tweetmaker(tweets);
+      $tweetbox.append($title, $backButton);
+      tweetmaker(tweets);
+      $tweetbox.fadeIn(300);
+    });
   }
 
   // Load initial tweets
